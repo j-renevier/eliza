@@ -1,0 +1,45 @@
+services:
+  ollama:
+    container_name: ollama
+    image: ollama/ollama:latest
+    ports:
+      - 7869:11434
+    volumes:
+      - ./llm:/root/.ollama
+    tty: true
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - ollama_net
+      - backend_net
+
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama-webui
+    volumes:
+      - ./llm/ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - "8081:8080"
+    environment:
+      - OLLAMA_BASE_URLS=http://host.docker.internal:7869
+      - ENV=dev
+      - WEBUI_AUTH=False
+      - WEBUI_NAME=valiantlynx AI
+      - WEBUI_URL=http://localhost:8081
+      - WEBUI_SECRET_KEY=t0p-s3cr3t
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    networks:
+      - ollama_net
+
+networks:
+  ollama_net:
+    driver: bridge
+  backend_net:
+    external: true
